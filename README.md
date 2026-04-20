@@ -4,12 +4,6 @@ A browser-based resume evaluation tool that works for **any job role**. Paste a 
 
 ---
 
-## Live Demo
-
-Deploy it yourself in under 2 minutes — see [Deployment](#deployment) below.
-
----
-
 ## What It Does
 
 This tool evaluates how well a resume matches a specific job description — for any role: engineering, product, design, sales, marketing, operations, finance, or anything else.
@@ -59,48 +53,6 @@ overall = jd_relevance   × 0.30
 
 ---
 
-## Getting Started
-
-### Option 1 — Run locally (zero setup)
-
-1. Download `index.html`
-2. Double-click it — opens in any browser
-3. Paste resume + JD, click **Analyze Resume**
-
-### Option 2 — Deploy to Netlify (30 seconds)
-
-1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag and drop `index.html`
-3. Get a live public URL instantly — no signup needed
-
-### Option 3 — Deploy to GitHub Pages
-
-1. Create a new GitHub repository (must be **public**)
-2. Upload `index.html` to the root of the repo — must be named exactly `index.html`
-3. Go to **Settings → Pages**
-4. Set source branch to `main`, folder to `/ (root)`
-5. Click **Save** — live at `https://yourusername.github.io/repo-name` in ~2 minutes
-
-### Option 4 — Deploy to Vercel
-
-```bash
-npx vercel
-```
-Or drag the file into [vercel.com/new](https://vercel.com/new).
-
----
-
-## File Structure
-
-```
-index.html    ← entire app (HTML + CSS + JS, single file, no dependencies)
-README.md     ← this file
-```
-
-No npm install. No build step. No external libraries.
-
----
-
 ## Verdict Thresholds
 
 | Score | Verdict | Interview Fit |
@@ -109,17 +61,6 @@ No npm install. No build step. No external libraries.
 | 62 – 77  | Good Match    | High / Medium |
 | 45 – 61  | Partial Match | Medium        |
 | 0 – 44   | Low Match     | Low           |
-
----
-
-## Customization
-
-All logic lives in the `analyze()` function inside `index.html`. Easy to modify:
-
-- **Add domain-specific skills** to the `techSkills` pattern array (e.g. `\\bhubspot\\b` for sales roles)
-- **Change score weights** in the `overall` calculation
-- **Adjust verdict thresholds** in the `verdict` line
-- **Add new dimensions** by extending the `dims` array
 
 ---
 
@@ -146,9 +87,3 @@ All logic lives in the `analyze()` function inside `index.html`. Easy to modify:
 - Vanilla HTML, CSS, JavaScript
 - Zero external dependencies
 - Runs 100% in the browser
-
----
-
-## License
-
-MIT — free to use, modify, and deploy.
