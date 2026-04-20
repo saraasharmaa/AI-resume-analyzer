@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #fff; color: #111; padding: 16px; }
+textarea { width: 100%; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-size: 13px; resize: vertical; min-height: 120px; margin-bottom: 12px; font-family: Arial, sans-serif; }
+button { width: 100%; padding: 12px; background: #111; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }
+button:hover { background: #333; }
+button:disabled { background: #999; cursor: not-allowed; }
+.label { font-size: 11px; font-weight: bold; color: #666; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.card { border: 1px solid #e5e5e5; border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+.verdict { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+.green { background: #e8f5e9; color: #2e7d32; }
+.blue { background: #e3f2fd; color: #1565c0; }
+.orange { background: #fff3e0; color: #e65100; }
+.red { background: #ffebee; color: #b71c1c; }
+.bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.bar-label { font-size: 12px; color: #555; width: 130px; flex-shrink: 0; }
+.bar-bg { flex: 1; background: #f0f0f0; border-radius: 4px; height: 8px; }
+.bar-fill { height: 8px; border-radius: 4px; }
+.bar-num { font-size: 12px; font-weight: bold; width: 30px; text-align: right; }
+.tag { display: block; padding: 7px 10px; border-radius: 8px; font-size: 13px; margin: 5px 0; line-height: 1.5; }
+.signal-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: #f0f0f0; color: #333; }
+.score-big { font-size: 28px; font-weight: bold; }
+h3 { font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+.err { background: #ffebee; color: #b71c1c; border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div style="font-size:15px;font-weight:bold;margin-bottom:4px;">FDE Resume Analyzer</div>
+<div style="font-size:13px;color:#666;margin-bottom:16px;">Paste resume + JD to get a structured hiring evaluation</div>
+
+<div class="label">Resume</div>
+<textarea id="res" placeholder="Paste the full resume here..."></textarea>
+
+<div class="label">Job Description</div>
+<textarea id="jd" placeholder="Paste the job description here..."></textarea>
+
+<button id="btn" onclick="go()">Analyze Candidate</button>
+
+<div id="err" class="err" style="display:none"></div>
+<div id="out" style="display:none"></div>
+
+<script>
+function barColor(s) {
+  return s >= 70 ? '#43a047' : s >= 48 ? '#fb8c00' : '#e53935';
+}
+
+function count(text, patterns) {
+  let n = 0;
+  patterns.forEach(p => {
+    const m = text.match(new RegExp(p, 'gi'));
+    if (m) n += m.length;
+  });
+  return n;
+}
+
+function analyze(resume, jd) {
+  const r = resume.toLowerCase();
+
+  const buildVerbs = count(r, ['\\bbuilt\\b','\\bshipped\\b','\\bdeployed\\b','\\blaunched\\b','\\bdeveloped\\b','\\bcreated\\b','\\bimplemented\\b','\\barchitected\\b','\\bdelivered\\b','\\breleased\\b','\\bintegrated\\b','\\bautomated\\b','\\bscaled\\b','\\boptimized\\b','\\bled\\b','\\bowned\\b','\\bdrove\\b','\\bbootstrapped\\b','\\bspun.?up\\b','\\brolled.?out\\b','\\bdesigned\\b','\\bpublished\\b','\\bmigrated\\b']);
+
+  const speedWords = count(r, ['\\brapid\\b','\\bquickly\\b','\\bfast\\b','\\b48.?hour\\b','\\b1.?day\\b','\\b2.?day\\b','\\bprototype\\b','\\bmvp\\b','\\bpoc\\b','\\bhackathon\\b','\\bsprint\\b','\\biterat\\b','\\bend.?to.?end\\b','\\bfrom.?scratch\\b','\\bsolo\\b','\\bindependently\\b','\\bzero.?to\\b']);
+
+  const projectRefs = count(r, ['\\bproject\\b','\\bsystem\\b','\\bplatform\\b','\\btool\\b','\\bapp\\b','\\bapplication\\b','\\bservice\\b','\\bpipeline\\b','\\bworkflow\\b','\\bdashboard\\b','\\bapi\\b','\\bbot\\b','\\bagent\\b','\\bmodule\\b','\\bfeature\\b']);
+
+  const aiTools = count(r, ['\\bllm\\b','\\bgpt\\b','\\bclaude\\b','\\bopenai\\b','\\blangchain\\b','\\blanggraph\\b','\\brag\\b','\\bembedding\\b','\\bvector\\b','\\bpinecone\\b','\\bweaviate\\b','\\bchroma\\b','\\bfaiss\\b','\\bhugging.?face\\b','\\bmistral\\b','\\bgemini\\b','\\bollama\\b','\\banthropicr\\b','\\bcohere\\b','\\bwhisper\\b','\\bvertex.?ai\\b','\\bbedrock\\b','\\bsagemaker\\b','\\bautogen\\b','\\bcrewai\\b','\\bcursor\\b','\\bcopilot\\b']);
+
+  const aiApplied = count(r, ['\\bai.?powered\\b','\\bai.?driven\\b','\\bai.?based\\b','\\bmachine.?learning\\b','\\bml.?model\\b','\\bnlp\\b','\\bnatural.?language\\b','\\btext.?generat\\b','\\bsummariz\\b','\\bclassif\\b','\\bpredict\\b','\\bfine.?tun\\b','\\bprompt\\b','\\binferenc\\b','\\bneural\\b','\\btransformer\\b','\\bgenerativ\\b','\\bchatbot\\b','\\bsemantic.?search\\b','\\brecommendation.?engine\\b','\\bknowledge.?base\\b','\\bintelligent\\b','\\bautomat\\b']);
+
+  const aiInOutcomes = count(r, ['used ai','leveraged ai','integrated ai','built with ai','built with llm','powered by ai','powered by llm','ai to automate','ai to generate','ai to analyze','ai to summarize','ai to classify','ai to extract','ai to process','ai to assist','ai to recommend','using llm','using gpt','using claude','using openai']);
+
+  const metrics = count(r, ['\\d+\\s*%','\\d+x\\b','\\d+\\s*times','\\d+\\s*users','\\d+\\s*customers','\\d+\\s*requests','\\d+\\s*ms\\b','\\d+\\s*seconds','\\d+\\s*hours','\\d+k\\b','\\d+m\\b','\\d+\\s*million','\\d+\\s*thousand','\\d+\\s*queries','\\d+\\s*records']);
+
+  const impactWords = count(r, ['\\breduced\\b','\\bincreased\\b','\\bimproved\\b','\\bsaved\\b','\\bcut\\b','\\bboosted\\b','\\bgrew\\b','\\baccelerated\\b','\\benabled\\b','\\bscaled\\b','\\bgenerated\\b','\\bachieved\\b']);
+
+  const problemSignals = count(r, ['\\bsolved\\b','\\bsolution\\b','\\bchallenge\\b','\\bproblem\\b','\\bbottleneck\\b','\\broot.?cause\\b','\\bdebug\\b','\\bdiagnos\\b','\\brefactor\\b','\\bredesign\\b','\\bidentified\\b','\\binvestigated\\b','\\banalyzed\\b','\\bproposed\\b']);
+
+  // Score calculations
+  const aiRaw = aiTools * 7 + aiApplied * 4 + aiInOutcomes * 12;
+  const aiScore = Math.min(100, 15 + aiRaw);
+
+  const exRaw = buildVerbs * 5 + speedWords * 8 + projectRefs * 2;
+  const exScore = Math.min(100, 15 + exRaw);
+
+  const psScore = Math.min(100, 20 + buildVerbs * 4 + problemSignals * 5);
+  const impScore = Math.min(100, 10 + metrics * 14 + impactWords * 4);
+
+  const lines = resume.split('\n').filter(l => l.trim().length > 0).length;
+  const clScore = Math.min(100, 25 + (lines > 10 ? 20 : 0) + (resume.length > 600 ? 15 : 0) + (resume.length > 1200 ? 10 : 0) + Math.min(20, buildVerbs * 2));
+
+  const overall = Math.round(psScore * 0.20 + exScore * 0.25 + aiScore * 0.20 + impScore * 0.25 + clScore * 0.10);
+
+  const verdict = overall >= 78 ? 'Strong Hire' : overall >= 62 ? 'Hire' : overall >= 45 ? 'Borderline' : 'Reject';
+  const vclass = overall >= 78 ? 'green' : overall >= 62 ? 'blue' : overall >= 45 ? 'orange' : 'red';
+  const il = overall >= 72 ? 'High' : overall >= 52 ? 'Medium' : 'Low';
+  const ilclass = il === 'High' ? 'green' : il === 'Medium' ? 'orange' : 'red';
+
+  const strengths = [];
+  if (buildVerbs >= 4) strengths.push('Strong builder profile — ' + buildVerbs + ' build/ship signals detected across projects');
+  if (aiTools >= 2) strengths.push('Specific AI tools referenced: ' + aiTools + ' tool mentions (LLM, RAG, vector DBs, etc.)');
+  if (aiApplied >= 3) strengths.push('AI applied in project context — ' + aiApplied + ' applied AI concept signals');
+  if (aiInOutcomes >= 1) strengths.push('AI directly tied to outcomes — shows practical application not just awareness');
+  if (metrics >= 2) strengths.push('Quantified impact: ' + metrics + ' metric(s) with concrete numbers found');
+  if (speedWords >= 2) strengths.push('Execution speed signals: rapid builds, MVPs, sprints, prototypes');
+  if (projectRefs >= 6) strengths.push('High project volume — ' + projectRefs + ' project/system references');
+  if (!strengths.length) strengths.push('Resume submitted — heuristic signals are low, recommend manual review');
+
+  const weaknesses = [];
+  if (aiTools < 2 && aiApplied < 3) weaknesses.push('AI usage signals are weak — name specific tools used in each project');
+  if (aiInOutcomes < 1) weaknesses.push('AI not tied to outcomes — describe what AI enabled, not just that it was used');
+  if (metrics < 2) weaknesses.push('Missing quantified impact — add numbers: % improvement, users, latency, time saved');
+  if (buildVerbs < 4) weaknesses.push('Low build/ship signal count — use stronger action verbs: built, shipped, deployed');
+  if (speedWords < 1) weaknesses.push('No execution speed signals — mention timelines, MVPs, solo builds');
+
+  const improvements = [
+    'For each project write: "Used [tool] to [do X], resulting in [metric outcome]"',
+    metrics < 3 ? 'Add numbers to every project: % faster, N users, X hours saved, Y% accuracy' : 'Good metric presence — ensure each metric is tied to a business outcome',
+    speedWords < 2 ? 'Mention delivery speed: "built in 3 days", "shipped solo MVP in 1 week"' : 'Speed signals are good — link them to complexity of what was shipped',
+    'Lead every bullet with: Action Verb + What changed + Why it mattered'
+  ];
+
+  const reasoning = `Heuristic engine detected ${buildVerbs} build/ship verbs, ${aiTools + aiApplied} AI signals (${aiTools} tools + ${aiApplied} applied concepts, ${aiInOutcomes} tied to outcomes), and ${metrics} quantified metric(s). Execution score ${Math.round(exScore)}/100 reflects ${buildVerbs >= 5 ? 'strong' : buildVerbs >= 3 ? 'moderate' : 'low'} shipping evidence. AI score ${Math.round(aiScore)}/100 accounts for project-level AI usage, not just skill listings. Overall ${overall}/100 → ${verdict}.`;
+
+  return {
+    overall, verdict, vclass, il, ilclass,
+    dims: [
+      { label: 'Problem solving', score: Math.round(psScore) },
+      { label: 'Execution speed', score: Math.round(exScore) },
+      { label: 'AI usage', score: Math.round(aiScore) },
+      { label: 'Real-world impact', score: Math.round(impScore) },
+      { label: 'Clarity', score: Math.round(clScore) }
+    ],
+    strengths, weaknesses, improvements, reasoning,
+    signals: { buildVerbs, speedWords, aiTools, aiApplied, aiInOutcomes, metrics, projectRefs }
+  };
+}
+
+function go() {
+  const resume = document.getElementById('res').value.trim();
+  const jd = document.getElementById('jd').value.trim();
+  const err = document.getElementById('err');
+  const out = document.getElementById('out');
+
+  err.style.display = 'none';
+  out.style.display = 'none';
+
+  if (!resume || !jd) {
+    err.textContent = 'Please paste both a resume and a job description.';
+    err.style.display = 'block';
+    return;
+  }
+
+  document.getElementById('btn').disabled = true;
+  document.getElementById('btn').textContent = 'Analyzing...';
+
+  setTimeout(() => {
+    try {
+      const r = analyze(resume, jd);
+      const s = r.signals;
+
+      out.innerHTML = `
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+            <span class="verdict ${r.vclass}">${r.verdict}</span>
+            <span class="verdict ${r.ilclass}">Interview: ${r.il}</span>
+            <span class="score-big" style="margin-left:auto;">${r.overall}<span style="font-size:14px;font-weight:normal;color:#666;">/100</span></span>
+          </div>
+          <div style="font-size:13px;line-height:1.7;color:#555;">${r.reasoning}</div>
+        </div>
+
+        <div class="card">
+          <h3>Dimension Scores</h3>
+          ${r.dims.map(d => `
+            <div class="bar-wrap">
+              <span class="bar-label">${d.label}</span>
+              <div class="bar-bg"><div class="bar-fill" style="width:${d.score}%;background:${barColor(d.score)};"></div></div>
+              <span class="bar-num" style="color:${barColor(d.score)};">${d.score}</span>
+            </div>`).join('')}
+        </div>
+
+        <div class="card">
+          <h3>Signal Breakdown</h3>
+          <div class="signal-row">
+            <span class="pill" style="background:#e3f2fd;color:#1565c0;">Build verbs: ${s.buildVerbs}</span>
+            <span class="pill" style="background:#e3f2fd;color:#1565c0;">Speed signals: ${s.speedWords}</span>
+            <span class="pill" style="background:#ede7f6;color:#4527a0;">AI tools: ${s.aiTools}</span>
+            <span class="pill" style="background:#ede7f6;color:#4527a0;">AI applied: ${s.aiApplied}</span>
+            <span class="pill" style="background:#ede7f6;color:#4527a0;">AI in outcomes: ${s.aiInOutcomes}</span>
+            <span class="pill" style="background:#e8f5e9;color:#2e7d32;">Metrics: ${s.metrics}</span>
+            <span class="pill" style="background:#f3f3f3;color:#333;">Project refs: ${s.projectRefs}</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Strengths</h3>
+          ${r.strengths.map(s => `<div class="tag" style="background:#e8f5e9;color:#2e7d32;">${s}</div>`).join('')}
+        </div>
+
+        <div class="card">
+          <h3>Weaknesses</h3>
+          ${r.weaknesses.length ? r.weaknesses.map(s => `<div class="tag" style="background:#ffebee;color:#b71c1c;">${s}</div>`).join('') : '<div class="tag" style="background:#e8f5e9;color:#2e7d32;">No major gaps detected</div>'}
+        </div>
+
+        <div class="card">
+          <h3>Resume Improvements</h3>
+          ${r.improvements.map(s => `<div class="tag" style="background:#fff3e0;color:#e65100;">${s}</div>`).join('')}
+        </div>`;
+
+      out.style.display = 'block';
+      out.scrollIntoView({ behavior: 'smooth' });
+    } catch(e) {
+      err.textContent = 'Error during analysis: ' + e.message;
+      err.style.display = 'block';
+    }
+
+    document.getElementById('btn').disabled = false;
+    document.getElementById('btn').textContent = 'Analyze Candidate';
+  }, 100);
+}
+</script>
+</body>
+</html>
